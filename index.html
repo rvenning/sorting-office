@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Sorting Office 📦 — Sort the Parcels</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#fff8e7">
+<meta name="description" content="Sort the parcels into the right postbox — by shape, by colour, by counting the stamps, by reading the label. Then the bell changes the rule.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sorting Office">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/gk-base.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+</head>
+<body>
+
+<!-- Splash -->
+<div class="screen active" id="screen-splash">
+  <div class="splash-inner">
+    <div class="splash-parcel" aria-hidden="true">📦</div>
+    <h1 class="logo">SORTING<span>OFFICE</span></h1>
+    <p class="tagline">Every parcel has a box. Find it before the bell!</p>
+    <button class="btn big" id="btn-continue-as" style="display:none"></button>
+    <button class="btn big" id="btn-start" onclick="App.play()">📬 Start Sorting</button>
+    <button class="btn ghost" id="btn-install" style="display:none">📲 Add to Home Screen</button>
+    <div class="splash-foot">
+      <span id="sync-badge">…</span>
+      <button class="btn-sound icon-btn">🔊</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile picker (roster + PIN modals rendered by GK.Profiles) -->
+<div class="screen" id="screen-profiles">
+  <header class="bar">
+    <button class="icon-btn" onclick="GK.UI.showScreen('splash')">←</button>
+    <h2>Who's sorting?</h2>
+    <button class="btn-sound icon-btn">🔊</button>
+  </header>
+  <div class="profile-list" id="profile-list"></div>
+</div>
+
+<!-- The map: six departments of three shifts -->
+<div class="screen" id="screen-map">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.play()">👥</button>
+    <div class="map-player" id="map-player"></div>
+    <button class="icon-btn" onclick="App.showLeaderboard()">🏆</button>
+  </header>
+  <button class="btn big continue" id="btn-continue"></button>
+  <div class="map-actions">
+    <button class="btn blue" onclick="App.showCupboard()">🗄️ Supply Cupboard</button>
+    <button class="btn blue" id="btn-rush" onclick="App.startRush()"></button>
+    <button class="btn blue" onclick="App.showHelp()">❓ How to Play</button>
+  </div>
+  <div class="shift-list" id="shift-list"></div>
+</div>
+
+<!-- Supply cupboard: upgrades on top, stamp album underneath -->
+<div class="screen" id="screen-cupboard">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.showMap()">←</button>
+    <h2>🗄️ Supply Cupboard</h2>
+    <span class="hud coins">🪙 <b id="shop-coins">0</b></span>
+  </header>
+  <p class="screen-hint">Coins come from sorting parcels. Everything you buy is yours for good.</p>
+  <div class="shop-list" id="shop-list"></div>
+  <h3 class="album-head">📕 Stamp Album <span id="album-count"></span></h3>
+  <p class="screen-hint">Just for fun — stickers don't change the game.</p>
+  <div class="album-grid" id="album-grid"></div>
+</div>
+
+<!-- Leaderboard -->
+<div class="screen" id="screen-leaderboard">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.showMap()">←</button>
+    <h2>🏆 Family Leaderboard</h2>
+    <button class="btn-sound icon-btn">🔊</button>
+  </header>
+  <p class="screen-hint">Ranked by best Rush Hour score.</p>
+  <div class="lb-rows" id="lb-rows"></div>
+</div>
+
+<!-- The shift -->
+<div class="screen" id="screen-game">
+  <header class="bar game-bar">
+    <button class="icon-btn" onclick="App.pause()">⏸</button>
+    <span class="hud" id="hud-shift"></span>
+    <span class="hud" id="hud-left"></span>
+    <span class="hud streak" id="hud-streak"></span>
+    <span class="hud score" id="hud-score">0</span>
+    <button class="icon-btn arm" id="btn-arm" onclick="App.useArm()" style="display:none"></button>
+  </header>
+  <div class="rule-banner" id="rule-banner"></div>
+  <!-- The bell warning lives INSIDE the stage and floats: as a sibling it
+       reflowed the stage every time it appeared, and the canvas geometry went
+       stale mid-shift. -->
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="bell-warn" id="bell-warn" style="display:none">🔔 The bell is about to ring!</div>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="screen" id="screen-results">
+  <div class="res-inner">
+    <div class="res-emoji" id="res-emoji">🎉</div>
+    <h2 class="res-title" id="res-title"></h2>
+    <div class="res-stars" id="res-stars"></div>
+    <div class="res-score" id="res-score">0</div>
+    <div class="res-stats">
+      <div id="res-clean"></div>
+      <div id="res-streak"></div>
+      <div id="res-coins"></div>
+      <div id="res-armed"></div>
+    </div>
+    <p class="res-finished" id="res-finished" style="display:none">👑 Every department sorted! You're the Postmaster — try Rush Hour for a score the family can chase.</p>
+    <div class="res-actions">
+      <button class="btn ghost" onclick="App.showMap()">🗺️ Map</button>
+      <button class="btn" id="res-retry" style="display:none"></button>
+      <button class="btn" id="res-next" style="display:none"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Pause -->
+<div class="modal" id="modal-pause">
+  <div class="modal-box">
+    <h3>⏸ Paused</h3>
+    <button class="btn green wide" onclick="App.resume()">▶️ Keep Sorting</button>
+    <button class="btn blue wide" onclick="App.showHelp()">❓ How to Play</button>
+    <div class="modal-actions">
+      <button class="btn-sound icon-btn">🔊</button>
+    </div>
+    <button class="btn grey wide" onclick="App.quit()">🗺️ Back to the map</button>
+  </div>
+</div>
+
+<!-- How to play -->
+<div class="modal" id="modal-help">
+  <div class="modal-box">
+    <h3>❓ How to Play</h3>
+    <ol class="help-steps">
+      <li>A parcel arrives on the belt. The <b>yellow banner</b> says how to sort it.</li>
+      <li><b>Drag it onto a postbox</b> — or just <b>tap the box</b> you want.</li>
+      <li>Wrong box? It <b>hops back out</b> and you try again. Nothing is lost.</li>
+      <li>Get them right <b>first time</b> to earn stars. Five in a row doubles your points.</li>
+      <li>In the Reading Room, some parcels say a word <b>no box has</b> — those go in the <b>returns bin</b>.</li>
+      <li>When the <b>bell rings 🔔</b> the rule changes and the boxes swap labels. Look again!</li>
+    </ol>
+    <button class="btn green wide" onclick="GK.UI.closeModal('modal-help')">Got it!</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="confetti"></canvas>
+
+<!-- gamekit (vendored from rvenning/gamekit into lib/) -->
+<script src="lib/gk-util.js"></script>
+<script src="lib/gk-audio.js"></script>
+<script src="lib/gk-ui.js"></script>
+<script src="lib/gk-storage.js"></script>
+<script src="lib/gk-profiles.js"></script>
+<script src="lib/gk-pwa.js"></script>
+<script src="lib/gk-fx.js"></script>
+<script src="lib/gk-debug.js"></script>
+<script>
+  // Paper scraps and stamp confetti, not fireworks — squares, low gravity.
+  const Fx = GK.Fx.configure({
+    grav: 300, poolCap: 420, shakeMax: 9, shakeDecay: 26, shape: "square",
+    burstSpeed: 150, burstSize: 2.6, textSize: 15, textDy: -30, textCap: 20,
+    font: "'Baloo 2',sans-serif",
+  });
+</script>
+<script src="js/firebase-config.js"></script>
+<!-- data registries -->
+<script src="js/parcels.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/shifts.js"></script>
+<script src="js/upgrades.js"></script>
+<!-- systems -->
+<script src="js/game.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

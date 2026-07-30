@@ -1,0 +1,406 @@
+/* Sorting Office — bright crayon.
+   Bold flat colour, thick near-black outlines, nothing softer than a rounded
+   corner. gk-base.css supplies the screens/buttons/modals; this restyles them
+   through the --gk-* custom properties and adds the game's own screens.
+
+   Note the .screen overrides: gk-base sets align-items:center on every screen,
+   which silently collapses anything meant to fill the width — the game stage in
+   particular, whose only child is an absolutely-positioned canvas and therefore
+   has a content width of zero. */
+
+:root {
+  --ink: #22201e;
+  --paper: #fffdf5;
+  --page: #fff8e7;
+  --floor: #f2e3c6;
+  --blue: #4aa3ff;
+  --pink: #e8467c;
+  --sun: #ffd63d;
+  --leaf: #5ec26a;
+  --tang: #ff8a3d;
+
+  /* Two pinks on purpose. --pink is for canvas art, where nothing sits on top
+     of it. --pink-deep is the button fill, dark enough that white lettering
+     clears 4.5:1 — the bright one measured 3.68 and was genuinely hard to read
+     at button text sizes. Every other fill here is LIGHT, so those buttons take
+     ink lettering instead; white on light blue measured 2.59. */
+  --pink-deep: #c92a63;
+  --plum: #8f1b47;
+
+  --gk-accent: #c92a63;
+  --gk-accent-sh: #8f1b47;
+  --gk-bg: var(--page);
+  --gk-text: var(--ink);
+  --gk-radius: 14px;
+}
+
+/* Paint the ROOT, not just body: with viewport-fit=cover iOS extends the visual
+   viewport past height:100% in standalone mode, and a background set only on
+   body stops short of the bottom inset — the gap falls through to the page
+   canvas and paints WHITE. */
+html { background: var(--floor); }
+
+body {
+  margin: 0;
+  font-family: "Baloo 2", system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--page);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+h1, h2, h3 { font-weight: 800; }
+
+/* ---------- buttons: redeclare EVERYTHING gk-base sets ---------- */
+
+.btn {
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--paper);
+  background: var(--pink-deep);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 5px 0 var(--ink);
+  margin: 6px 0;
+  padding: 12px 18px;
+  font-size: 17px;
+  transition: transform .08s, box-shadow .08s;
+}
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+/* Light fills take INK lettering, not white — the crayon look wants the dark
+   outline colour on top anyway, and it keeps every button above 4.5:1. */
+.btn.green { background: var(--leaf); color: var(--ink); }
+.btn.blue { background: var(--blue); color: var(--ink); }
+.btn.grey { background: #9aa0a8; color: var(--ink); }
+.btn.ghost { background: var(--paper); color: var(--ink); }
+.btn.big { font-size: 21px; padding: 15px 26px; }
+.btn.small { font-size: 14px; padding: 8px 12px; box-shadow: 0 4px 0 var(--ink); }
+.btn.wide { width: 100%; }
+.btn:disabled { opacity: .55; box-shadow: 0 5px 0 var(--ink); transform: none; }
+
+.icon-btn {
+  font-family: inherit;
+  font-size: 20px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  padding: 4px 9px;
+  color: var(--ink);
+}
+.icon-btn.arm { background: var(--sun); }
+
+/* ---------- bars & screens ---------- */
+
+.screen { align-items: stretch; justify-content: flex-start; }
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 10px 8px;
+  background: var(--sun);
+  border-bottom: 4px solid var(--ink);
+  flex: 0 0 auto;
+}
+.bar h2 { flex: 1; margin: 0; font-size: 19px; text-align: center; }
+.hud { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.hud.score { margin-left: auto; font-size: 19px; }
+/* On the yellow bar, the bright pink measured 2.0:1 — the deep plum reads. */
+.hud.streak { color: var(--plum); }
+.hud.coins { font-size: 16px; }
+
+.screen-hint {
+  margin: 10px 14px 4px;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: .75;
+  text-align: center;
+}
+
+/* ---------- splash ---------- */
+
+.splash-inner {
+  max-width: 420px;
+  margin: auto;
+  padding: 24px 18px calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.splash-parcel { font-size: 84px; line-height: 1; animation: bob 2.4s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-9px) rotate(-4deg); } }
+.logo {
+  margin: 6px 0 2px;
+  font-size: 40px;
+  line-height: .95;
+  letter-spacing: -1px;
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  color: var(--sun);
+}
+.logo span { display: block; color: var(--blue); }
+.tagline { margin: 4px 0 18px; font-size: 15px; opacity: .8; }
+.splash-foot {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  opacity: .75;
+}
+
+/* ---------- the map ---------- */
+
+.map-player { flex: 1; font-size: 15px; display: flex; flex-direction: column; line-height: 1.15; }
+.map-stats { font-size: 13px; opacity: .8; }
+
+#screen-map, #screen-cupboard, #screen-leaderboard, #screen-profiles {
+  overflow-y: auto;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+.btn.continue { margin: 12px 14px 4px; }
+.map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 14px 10px;
+}
+.map-actions .btn { flex: 1 1 30%; margin: 0; font-size: 14px; padding: 10px 8px; }
+
+.shift-list { padding: 0 12px; }
+.dept {
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.dept-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--dept, var(--blue));
+  border-bottom: 3px solid var(--ink);
+}
+/* Ink lettering, not cream-with-a-stroke. Cream on these bands measures 2-3:1
+   and was only legible because of -webkit-text-stroke — fine until something
+   doesn't support it, and then the headings vanish. */
+.dept-head h3 { flex: 1; margin: 0; font-size: 17px; color: var(--ink); }
+.dept-icon { font-size: 20px; }
+.dept-tick { font-size: 18px; color: var(--ink); }
+.dept.done .dept-head { filter: saturate(.7); }
+
+.shift-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px; }
+.shift-card {
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 9px 4px;
+  background: var(--page);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 4px 0 var(--ink);
+  color: var(--ink);
+}
+.shift-card:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.shift-card.next { background: var(--sun); animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: translateY(-3px); } }
+.shift-card.locked { opacity: .5; box-shadow: 0 4px 0 var(--ink); transform: none; }
+.sc-num { font-size: 17px; font-weight: 800; }
+.sc-name { font-size: 11px; font-weight: 700; line-height: 1.15; text-align: center; }
+.sc-stars { font-size: 13px; color: #7a5c00; letter-spacing: 1px; }
+
+/* ---------- supply cupboard ---------- */
+
+.shop-list { padding: 6px 12px; }
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 9px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+}
+.si-icon { font-size: 28px; }
+.si-text { flex: 1; display: flex; flex-direction: column; font-size: 14px; line-height: 1.25; }
+.si-pips { font-size: 12px; color: var(--plum); letter-spacing: 2px; }
+.si-desc { font-size: 12px; font-weight: 700; opacity: .75; }
+
+.album-head { margin: 16px 14px 2px; font-size: 17px; }
+.album-head span { font-size: 14px; opacity: .7; }
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px 12px;
+}
+.sticker {
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  background: var(--paper);
+  border: 3px dashed var(--ink);
+  border-radius: 12px;
+  color: var(--ink);
+}
+.sticker.owned { border-style: solid; background: var(--sun); }
+.sticker:disabled { opacity: 1; }
+.sticker:not(.owned):disabled { opacity: .45; }
+.st-icon { font-size: 26px; line-height: 1; }
+.st-cost { font-size: 10px; font-weight: 700; }
+
+/* ---------- leaderboard ---------- */
+
+.lb-rows { padding: 6px 12px; }
+.lb-stat { font-size: 14px; font-weight: 800; margin-left: 10px; }
+
+/* ---------- the shift ---------- */
+
+#screen-game {
+  padding: 0;
+  overflow: hidden;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+}
+.game-bar { gap: 6px; }
+.game-bar .hud { font-size: 13px; }
+.game-bar .hud.score { font-size: 18px; }
+
+.rule-banner {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 12px;
+  background: var(--sun);
+  border-bottom: 4px solid var(--ink);
+  text-align: center;
+}
+.rule-title { font-size: 19px; font-weight: 800; line-height: 1.1; }
+.rule-hint { font-size: 12px; font-weight: 700; opacity: .8; line-height: 1.2; }
+.rule-banner.rang { animation: rang .7s ease-out; }
+@keyframes rang {
+  0% { background: var(--paper); transform: scale(1.06); }
+  40% { background: var(--tang); }
+  100% { background: var(--sun); transform: scale(1); }
+}
+
+/* Floats over the stage rather than sitting above it: as a flex sibling it
+   changed the stage height every time it toggled. */
+.bell-warn {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 5px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--paper);
+  background: var(--tang);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  pointer-events: none;
+  animation: flash 0.8s ease-in-out infinite;
+}
+@keyframes flash { 50% { background: var(--pink); } }
+
+/* The stage must fill what's left and be allowed to shrink — min-height:0 is
+   what lets a flex child with an absolutely-positioned canvas size correctly. */
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+#cv {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* ---------- results ---------- */
+
+.res-inner {
+  max-width: 420px;
+  margin: auto;
+  padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.res-emoji { font-size: 60px; line-height: 1; }
+.res-title { margin: 4px 0 8px; font-size: 25px; }
+.res-stars { display: flex; gap: 6px; min-height: 46px; align-items: center; }
+.res-star {
+  font-size: 40px;
+  color: #d8d2c2;
+  -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke fill;
+  animation: pop .45s cubic-bezier(.2,1.6,.4,1);
+}
+.res-star.on { color: var(--sun); }
+@keyframes pop { 0% { transform: scale(0) rotate(-40deg); } 100% { transform: scale(1) rotate(0); } }
+.res-score {
+  font-size: 38px;
+  font-weight: 800;
+  -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke fill;
+  color: var(--paper);
+}
+.res-stats { display: flex; flex-direction: column; gap: 3px; margin: 8px 0 4px; font-size: 15px; }
+.res-stats div:empty { display: none; }
+.res-finished { font-size: 14px; margin: 8px 0 0; }
+.res-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; width: 100%; }
+.res-actions .btn { flex: 1 1 40%; margin: 0; }
+
+/* ---------- modals & help ---------- */
+
+.modal-box {
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: 18px;
+}
+.modal-box h3 { margin: 0 0 10px; font-size: 21px; }
+.modal-actions { display: flex; justify-content: center; margin: 8px 0; }
+.help-steps { text-align: left; font-size: 14px; font-weight: 700; line-height: 1.45; padding-left: 20px; margin: 0 0 12px; }
+.help-steps li { margin-bottom: 6px; }
+
+.toast {
+  font-family: inherit;
+  font-weight: 800;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 12px;
+}
+
+/* Avatar grid: minmax(0, 1fr), never plain 1fr — an `auto` minimum won't let a
+   track shrink below its content and the last column spills out of the modal on
+   a narrow phone. */
+.avatar-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+
+@media (max-width: 340px) {
+  .logo { font-size: 34px; }
+  .rule-title { font-size: 17px; }
+  .album-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "sorting-office",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sort the parcels into the right postbox — a bright-crayon sorting game built on gamekit.",
+  "scripts": {
+    "test": "node --test",
+    "report": "node tests/bot.test.js --report",
+    "icons": "node tools/make-icons.js"
+  }
+}

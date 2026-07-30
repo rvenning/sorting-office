@@ -1,0 +1,16 @@
+{
+  "name": "Sorting Office",
+  "short_name": "Sorting Office",
+  "description": "Sort the parcels into the right postbox — by shape, colour, counting or reading. Then the bell changes the rule.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2e3c6",
+  "theme_color": "#fff8e7",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
