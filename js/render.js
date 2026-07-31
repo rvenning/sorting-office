@@ -87,10 +87,15 @@ const Render = {
     this.scale = GK.util.clamp(this.W / 380, 0.7, 1.7);
     this.safeB = parseFloat(getComputedStyle(stage).getPropertyValue("--safe-b")) || 0;
 
-    this.boxH = GK.util.clamp(this.H * 0.3, 104, 190);
+    this.boxH = GK.util.clamp(this.H * 0.3, 104, 230);
     this.boxY = this.H - this.boxH - this.safeB - 10 * this.scale;
-    this.beltY = GK.util.clamp(this.H * 0.2, 60, 150);
-    this.parcelY = this.beltY + (this.boxY - this.beltY) * 0.42;
+    this.beltY = GK.util.clamp(this.H * 0.16, 54, 130);
+    // Centre the parcel in the room rather than sitting it high, and let it grow
+    // into a tall phone screen. At a fixed size on a 812px-tall portrait it read
+    // as one small box floating in a large empty void.
+    const gap = this.boxY - this.beltY;
+    this.parcelY = this.beltY + gap * 0.5;
+    this.parcelScale = GK.util.clamp(gap / 300, 0.9, 1.55);
     this.layoutBoxes();
   },
 
@@ -126,7 +131,7 @@ const Render = {
   },
 
   parcelHit(x, y) {
-    const r = 62 * this.scale;
+    const r = 62 * this.scale * (this.parcelScale || 1);
     return Math.abs(x - this.W / 2) < r && Math.abs(y - this.parcelY) < r;
   },
 
@@ -302,8 +307,15 @@ const Render = {
       ctx.beginPath(); ctx.arc(x, by + bh / 2, 5 * S, 0, Math.PI * 2); ctx.fill();
     }
 
+    // Furnish the walls. A fixed play area never matches a phone's aspect, so
+    // the room between the belt and the boxes is mostly empty — and a parcel
+    // floating in a blank field reads as unfinished rather than deliberate.
+    // Everything here stays inside the outer 22% on each side, clear of the
+    // parcel and of anywhere a finger drags.
+    this.drawFittings(floorY);
+
     // The bell, up in the corner, swinging when it has just rung.
-    if (Game.shift.bell) this.drawBell(this.W - 34 * S, by + bh + 30 * S, 16 * S);
+    if (Game.shift.bell) this.drawBell(this.W - 34 * S, by + bh + 34 * S, 16 * S);
 
     // Rush Hour's clock: a bar that empties across the top of the belt.
     if (Game.mode === "rush" && Number.isFinite(this.timeLimit)) {
@@ -316,6 +328,44 @@ const Render = {
       ctx.lineWidth = 2.4 * S; ctx.strokeStyle = INK;
       rrect(ctx, x, y, w, h, h / 2); ctx.stroke();
     }
+  },
+
+  // Shelf of spare parcels on the left, wall clock on the right, skirting board
+  // along the floor. Purely scenery — nothing here is interactive.
+  drawFittings(floorY) {
+    const ctx = this.ctx, S = this.scale;
+    const mid = (this.beltY + this.boxY) / 2;
+    ctx.lineWidth = Math.max(2.2, 3 * S);
+    ctx.strokeStyle = INK;
+    ctx.lineJoin = "round";
+
+    // Left shelf with two stacked parcels.
+    const sw = Math.min(this.W * 0.2, 74 * S);
+    const sx = 4 * S, sy = mid - 6 * S;
+    ctx.fillStyle = "#a8763f";
+    rrect(ctx, sx, sy, sw, 7 * S, 3 * S); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PARCEL_BROWN;
+    rrect(ctx, sx + 6 * S, sy - 22 * S, sw * 0.44, 22 * S, 3 * S); ctx.fill(); ctx.stroke();
+    rrect(ctx, sx + sw * 0.52, sy - 16 * S, sw * 0.4, 16 * S, 3 * S); ctx.fill(); ctx.stroke();
+
+    // Right-hand wall clock.
+    const cx = this.W - Math.min(this.W * 0.11, 34 * S), cy = mid - 4 * S;
+    const cr = Math.min(this.W * 0.075, 20 * S);
+    ctx.fillStyle = "#fffdf5";
+    ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineCap = "round";
+    ctx.lineWidth = Math.max(2, 2.6 * S);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - cr * 0.62);
+    ctx.moveTo(cx, cy); ctx.lineTo(cx + cr * 0.48, cy + cr * 0.28);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+
+    // Skirting board where the wall meets the floor.
+    ctx.fillStyle = "#c9a26a";
+    ctx.fillRect(0, floorY - 12 * S, this.W, 9 * S);
+    ctx.fillStyle = INK;
+    ctx.fillRect(0, floorY - 13 * S, this.W, 2 * S);
   },
 
   drawBell(cx, cy, r) {
@@ -344,7 +394,8 @@ const Render = {
   drawParcel(p, cx, cy, s, attrs) {
     const ctx = this.ctx, S = this.scale;
     const mul = attrs.includes("size") ? sizeScale(p.size) : 1;
-    const w = 96 * S * s * mul, h = 74 * S * s * mul;
+    const g = this.parcelScale || 1;
+    const w = 96 * S * s * mul * g, h = 74 * S * s * mul * g;
     const x = cx - w / 2, y = cy - h / 2;
     const r = 8 * S;
 

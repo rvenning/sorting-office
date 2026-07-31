@@ -42,6 +42,11 @@ html { background: var(--floor); }
 
 body {
   margin: 0;
+  /* Every screen is position:fixed, so body has almost no content height and
+     the root's floor colour showed through below it — a two-tone splash on
+     every launch. Stretch body over the viewport so its own colour wins, and
+     let the root colour serve only the standalone overflow it was added for. */
+  min-height: 100vh;
   font-family: "Baloo 2", system-ui, sans-serif;
   font-weight: 700;
   color: var(--ink);
@@ -268,12 +273,17 @@ h1, h2, h3 { font-weight: 800; }
 
 /* ---------- the shift ---------- */
 
+/* NEVER set `display` here. gk-base hides screens with `.screen{display:none}`
+   and reveals them with `.screen.active{display:flex}` — and an ID selector
+   outranks both, so `#screen-game{display:flex}` pins the game screen visible
+   on top of every other screen forever. It looks fine (the splash is drawn
+   first and the game canvas is transparent where nothing is painted) and it
+   silently eats every click on the splash, because the canvas is what's
+   actually under the pointer. gk-base already supplies flex-direction:column. */
 #screen-game {
   padding: 0;
   overflow: hidden;
   touch-action: none;
-  display: flex;
-  flex-direction: column;
 }
 .game-bar { gap: 6px; }
 .game-bar .hud { font-size: 13px; }
